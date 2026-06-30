@@ -1,0 +1,37 @@
+import sys
+import time
+import os
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+import subprocess
+
+last_run = 0.0
+DEBOUNCE = 0.5
+
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+class Handler(FileSystemEventHandler):
+    def on_modified(self, event):
+        global last_run
+        if (event.src_path.endswith('sj.py') and 
+            not event.is_directory and
+            time.time() - last_run > DEBOUNCE):
+            last_run = time.time()
+            clear_screen()          # 清屏
+            print(f"*-*" * 15)
+            subprocess.run([sys.executable, event.src_path])
+
+if __name__ == "__main__":
+    path = '.'
+    observer = Observer()
+    observer.schedule(Handler(), path, recursive=False)
+    observer.start()
+    clear_screen()
+    print("监控已启动，按 Ctrl+C 停止...")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
